@@ -52,8 +52,7 @@
 **注意事项**
 
 在创建 PR 前，建议先同步上游仓库的最新更改:
-
-    ```bash
-    git fetch upstream
-    git merge upstream/main
-    ```
+```bash
+git fetch upstream
+git merge upstream/main
+```
