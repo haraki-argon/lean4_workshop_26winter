@@ -5,7 +5,7 @@
 
 | 日期 Date | 上午 Morning (09:50–12:00) | 下午 Afternoon (13:30–17:00) |
 |-----------|---------------------------|-----------------------------|
-| 2026.1.19-2026.1.25 | 讲课 Lecture | 助教辅导 + 小组分享 + 练习 TA session & Group work |
+| 2026.1.19-2026.1.25 | 讲课 Lecture | 助教/小组分享 + 练习 TA session & Group work |
 
 ## 目录 
 
@@ -14,8 +14,7 @@ lean4_workshop_26winter/
 ├── exercises/        # 随堂练习
 ├── homework/        # 作业
 ├── materials/        # 参考资料
-├── notes/            # 讲义
-├── AI4M_slices/      # AI for Math slices
+├── lecture_notes/            # 讲义
 ├── LEAN_INSTALL.md   # Lean环境安装（Windows / macOS）
 ├── .gitignore      
 ├── LICENSE         
