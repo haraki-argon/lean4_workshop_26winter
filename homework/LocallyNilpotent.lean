@@ -1,15 +1,73 @@
 import Mathlib
+
+/-!
+# Locally Nilpotent Ideals
+
+This file develops the theory of locally nilpotent ideals in commutative rings,
+based on Stacks Project tag 0AMF. [https://stacks.math.columbia.edu/tag/0AMF]
+
+
+## Main definitions
+
+  * `Ideal.IsLocallyNilpotent`
+  * `Ideal.IsLocallyNilpotent.map`
+  * `isUnit_iff_isUnit_quotient`
+  * `Ideal.isLocallyNilpotent_iff_isNilpotent`
+  * `PrimeSpectrum_quotient_equiv`
+  * `Clopens_equiv_of_equiv`
+  * `idempotents_equiv_quotient`
+
+## Contributors
+
+  - 姜懿轩、商道轩、左浩民
+
+-/
+
+/-definition 10.32.1-/
 def Ideal.IsLocallyNilpotent {R : Type*} [Semiring R] (I : Ideal R) : Prop :=
   ∀ x ∈ I, IsNilpotent x
 
-/-项目协助注释. 所有证明在 https://stacks.math.columbia.edu/tag/0AMF 上可以找到，或者询问 AI.-/
-
 /-lemma 10.32.3-/
 lemma Ideal.IsLocallyNilpotent.map {R R' : Type*} [CommRing R] [CommRing R']
-  (f : R →+* R') {I : Ideal R} (h : I.IsLocallyNilpotent) :
-  (I.map f).IsLocallyNilpotent := by
-sorry
-
+(f : R →+* R') {I : Ideal R} (h : I.IsLocallyNilpotent) :
+(I.map f).IsLocallyNilpotent := by
+  intro x hx
+  refine Submodule.span_induction ?_ ?_ ?_ ?_ hx
+  --Case 1.y∈f(I)
+  · intro y hy
+    rcases hy with ⟨x,hxI,hxy⟩
+    have Hx: IsNilpotent x:= h x hxI
+    obtain⟨n , hn⟩:= Hx
+    use n
+    calc
+    y^n=(f x)^n :=by rw[←hxy]
+    _ = f (x^n) :=by rw[map_pow]
+    _ =f 0 := by rw[hn]
+    _ = 0 := map_zero f
+  --Case 2.zero
+  · exact IsNilpotent.zero
+  --Case 3.add
+  · intro a b ha hb hna hnb
+    obtain⟨n , Ha⟩:=hna
+    obtain⟨m , Hb⟩:=hnb
+    use n+m
+    have H(i:ℕ):i≥ n ∨ (n+m-i) ≥ m := by omega
+    have H'(i:ℕ): a^i*b^(n+m-i) =0 := by
+        specialize H i
+        rcases H with H1 | H2
+        · rw[pow_eq_zero_of_le H1 Ha]
+          ring
+        · rw[pow_eq_zero_of_le H2 Hb]
+          ring
+    simp [add_pow,H']
+  --Case 4. mul
+  · intro t a ha hna
+    obtain⟨n , Ha⟩:=hna
+    use n
+    calc
+    (t * a)^n =t ^ n * a ^ n :=by rw[mul_pow]
+    _ =t ^ n * 0 :=by  rw[Ha]
+    _ = 0 := by ring
 
 /-lemma 10.32.4-/
 lemma isUnit_iff_isUnit_quotient {R : Type*} [CommRing R] (I : Ideal R)
@@ -153,7 +211,7 @@ lemma locallyNilpotent_le_prime_ideal
         · exact hP
       exact this
 
-
+/-引理：对于LocallyNilpotent理想，商环的素谱与原环的素谱同胚. 下面我们直接构造典范映射来证明这个同胚-/
 def PrimeSpectrum_quotient_equiv
   {R : Type*} [CommRing R] (I : Ideal R) (hI : I.IsLocallyNilpotent) :
   PrimeSpectrum (R ⧸ I) ≃ₜ PrimeSpectrum R := by
@@ -258,13 +316,51 @@ def PrimeSpectrum_quotient_equiv
       exact PrimeSpectrum.isOpen_basicOpen
   }
 
-
+/-证明同胚的拓扑空间的Clopen集间存在双射.直接构造-/
 def Clopens_equiv_of_equiv {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
   (f : X ≃ₜ Y) :
   TopologicalSpace.Clopens X ≃ TopologicalSpace.Clopens Y := by
-  sorry
-
-
+  -- 构造一个 Equiv 需要提供 toFun, invFun, left_inv, right_inv
+  refine {
+    -- 定义从 Clopens X 到 Clopens Y 的前向映射
+    -- 对于 X 中的一个闭开集 U，它的像是 f '' U
+    toFun := fun U ↦ ⟨f.toEquiv '' U, by
+      -- 需要证明 f '' U 也是一个闭开集
+      constructor
+      · exact f.isClosedMap U U.isClosed
+      · exact f.isOpenMap U U.isOpen
+      ⟩,
+    -- 定义从 Clopens Y 到 Clopens X 的反向映射
+    -- 对于 Y 中的一个闭开集 V，它的原像是 f⁻¹ '' V
+    invFun := fun V ↦ ⟨f.toEquiv.symm '' V, by
+      -- 同样，需要证明 f⁻¹ '' V 是 X 中的闭开集
+      constructor
+      · exact f.symm.isClosedMap V V.isClosed
+      · exact f.symm.isOpenMap V V.isOpen
+      ⟩,
+    -- 证明 left_inv: invFun(toFun(U)) = U
+    left_inv := fun U ↦ by
+      -- 展开定义
+      simp only [Homeomorph.coe_symm_toEquiv, Homeomorph.coe_toEquiv,
+        TopologicalSpace.Clopens.coe_mk]
+      -- f⁻¹''(f '' U) = U，因为 f 是双射 (injective)
+      ext
+      simp only [TopologicalSpace.Clopens.coe_mk, Set.mem_image, SetLike.mem_coe,
+        exists_exists_and_eq_and, Homeomorph.symm_apply_apply, exists_eq_right],
+    -- 证明 right_inv: toFun(invFun(V)) = V
+    right_inv := fun V ↦ by
+      -- 展开定义
+      simp only [Homeomorph.coe_symm_toEquiv, Homeomorph.coe_toEquiv,
+        TopologicalSpace.Clopens.coe_mk]
+      -- f''(f⁻¹ '' V) = V，因为 f 是双射 (surjective)
+      ext
+      simp only [TopologicalSpace.Clopens.coe_mk, Set.mem_image, SetLike.mem_coe,
+        exists_exists_and_eq_and, Homeomorph.apply_symm_apply, exists_eq_right]
+  }
+/-主定理：对于局部幂零理想 I，R 中的幂等元与商环 R ⧸ I 中的幂等元之间存在自然的双射.
+首先利用mathlib里已有的定理构造幂等元和Clopen集之间的双射，然后利用上面构造的同胚映射
+  PrimeSpectrum_quotient_equiv 和 Clopens_equiv_of_equiv 构造商环和原环素谱的Clopen集之间的双射，最后组合这些双射得到所需的结果.
+-/
 noncomputable def idempotents_equiv_quotient {R : Type*} [CommRing R] (I : Ideal R)
   (hI : I.IsLocallyNilpotent) :
   { e : R // e * e = e } ≃ { e : R ⧸ I // e * e = e } := by
